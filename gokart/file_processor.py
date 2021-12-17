@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from abc import abstractmethod
 from logging import getLogger
 
+import lmdb
 import luigi
 import luigi.contrib.s3
 import luigi.format
@@ -252,6 +253,31 @@ class FeatherFileProcessor(FileProcessor):
         dump_obj.to_feather(file.name)
 
 
+
+class LmdbFileProcessor(FileProcessor):
+
+    def __init__(self, file_path: str) -> None:
+        self.__file_path = file_path
+        super(LmdbFileProcessor, self).__init__()
+
+    @property
+    def env(self) -> lmdb.Environment:
+        # To avoid creating `env` in the constructor for paths other than .lmdb. 
+        if not hasattr(self, '__env'):
+            self.__env = lmdb.open(self.__file_path, subdir=False, lock=True)
+        return self.__env
+
+    def load(self, file):
+        with self.env.begin(write=False) as txn:
+            for k, v in txn.cursor():
+                yield k, v
+
+    def dump(self, obj):
+        key, value = obj
+        with self.env.begin(write=True) as txn:
+            txn.put(key, value)
+
+
 def make_file_processor(file_path: str, store_index_in_feather: bool) -> FileProcessor:
     extension2processor = {
         '.txt': TextFileProcessor(),
@@ -266,6 +292,7 @@ def make_file_processor(file_path: str, store_index_in_feather: bool) -> FilePro
         '.feather': FeatherFileProcessor(store_index_in_feather=store_index_in_feather),
         '.png': BinaryFileProcessor(),
         '.jpg': BinaryFileProcessor(),
+        '.lmdb': LmdbFileProcessor(file_path=file_path)
     }
 
     extension = os.path.splitext(file_path)[1]

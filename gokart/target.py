@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from gokart.file_processor import FileProcessor, make_file_processor
+from gokart.file_processor import FileProcessor, LmdbFileProcessor, make_file_processor
 from gokart.object_storage import ObjectStorage
 from gokart.redis_lock import RedisParams, make_redis_params, with_lock
 from gokart.zip_client_util import make_zip_client
@@ -92,12 +92,23 @@ class SingleFileTarget(TargetOnKart):
         return self._redis_params
 
     def _load(self) -> Any:
+        if self._processor.__class__ == LmdbFileProcessor:
+            return self._load_without_file_open()
         with self._target.open('r') as f:
             return self._processor.load(f)
 
+    def _load_without_file_open(self) -> Any:
+        return self._processor.load()
+
     def _dump(self, obj) -> None:
-        with self._target.open('w') as f:
-            self._processor.dump(obj, f)
+        if self._processor.__class__ == LmdbFileProcessor:
+            self._dump_without_file_open(obj)
+        else:
+            with self._target.open('w') as f:
+                self._processor.dump(obj, f)
+
+    def _dump_without_file_open(self) -> Any:
+        return self._processor.dump(obj)
 
     def _remove(self) -> None:
         if self._target.exists():
