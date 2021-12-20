@@ -103,9 +103,9 @@ class SingleFileTarget(TargetOnKart):
     def _dump(self, obj) -> None:
         if self._processor.__class__ == LmdbFileProcessor:
             self._dump_without_file_open(obj)
-        else:
-            with self._target.open('w') as f:
-                self._processor.dump(obj, f)
+            return 
+        with self._target.open('w') as f:
+            self._processor.dump(obj, f)
 
     def _dump_without_file_open(self, obj) -> Any:
         return self._processor.dump(obj)
