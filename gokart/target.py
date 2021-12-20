@@ -107,7 +107,7 @@ class SingleFileTarget(TargetOnKart):
             with self._target.open('w') as f:
                 self._processor.dump(obj, f)
 
-    def _dump_without_file_open(self) -> Any:
+    def _dump_without_file_open(self, obj) -> Any:
         return self._processor.dump(obj)
 
     def _remove(self) -> None:
