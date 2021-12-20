@@ -264,7 +264,7 @@ class LmdbFileProcessor(FileProcessor):
     def env(self) -> lmdb.Environment:
         # To avoid creating `env` in the constructor for paths other than .lmdb. 
         if not hasattr(self, '__env'):
-            self.__env = lmdb.open(self.__file_path, subdir=False, lock=True)
+            self.__env = lmdb.open(self.__file_path, map_size=10 ** 12, subdir=False, readonly=False, lock=False)
         return self.__env
 
     def load(self, file):
