@@ -127,6 +127,22 @@ class LocalTargetTest(unittest.TestCase):
 
         pd.testing.assert_frame_equal(loaded, obj)
 
+    def test_save_and_load_lmdb(self):
+        data = {
+            b'foo': b'bar',
+            b'baz': b'qux',
+        }
+        file_path = os.path.join(_get_temporary_directory(), 'test.lmdb')
+
+        target = make_target(file_path=file_path, unique_id=None, store_index_in_feather=False)
+
+        for key, value in data.items():
+            target.dump((key, value))
+        for key, value_dumped in data.items():
+            with target._processor.env.begin() as txn:
+                value_loaded = txn.get(key)
+                self.assertEqual(value_dumped, value_loaded)
+
     def test_last_modified_time(self):
         obj = pd.DataFrame(dict(a=[1, 2], b=[3, 4]))
         file_path = os.path.join(_get_temporary_directory(), 'test.csv')
