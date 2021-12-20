@@ -267,7 +267,7 @@ class LmdbFileProcessor(FileProcessor):
             self.__env = lmdb.open(self.__file_path, map_size=10 ** 12, subdir=False, readonly=False, lock=False)
         return self.__env
 
-    def load(self, file):
+    def load(self):
         with self.env.begin(write=False) as txn:
             for k, v in txn.cursor():
                 yield k, v
